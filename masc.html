@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network Logic Gates</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Neural Network Logic Gates</h1>
+    <button onclick="trainGate('AND')">Train AND Gate</button>
+    <button onclick="trainGate('OR')">Train OR Gate</button>
+    <button onclick="trainGate('XOR')">Train XOR Gate</button>
+    <div class="output" id="output"></div>
+
+    <script>
+        // Función sigmoide
+        function sigmoid(x) {
+            return 1 / (1 + Math.exp(-x));
+        }
+
+        // Derivada de la función sigmoide
+        function sigmoidDerivative(x) {
+            return x * (1 - x);
+        }
+
+        // Clase de Red Neuronal con ajustes para mejorar el aprendizaje
+        class NeuralNetwork {
+            constructor() {
+                // Pesos iniciales más consistentes
+                this.weights1 = [0.5, -0.5];  // Pesos de la capa oculta
+                this.weightBias1 = 0.0;      // Sesgo de la capa oculta
+                this.weightOutput = 0.5;    // Peso de la capa de salida
+                this.biasOutput = -0.5;     // Sesgo de la capa de salida
+            }
+
+            // Propagación hacia adelante
+            forward(inputs) {
+                this.input1 = inputs[0];
+                this.input2 = inputs[1];
+
+                // Cálculo de la capa oculta
+                this.hiddenSum = this.input1 * this.weights1[0] + this.input2 * this.weights1[1] + this.weightBias1;
+                this.hiddenOutput = sigmoid(this.hiddenSum);
+
+                // Cálculo de la salida
+                this.outputSum = this.hiddenOutput * this.weightOutput + this.biasOutput;
+                this.output = sigmoid(this.outputSum);
+
+                return this.output;
+            }
+
+            // Entrenamiento
+            train(inputs, expectedOutput, learningRate = 0.1) {
+                const predictedOutput = this.forward(inputs);
+
+                // Error en la salida
+                const outputError = expectedOutput - predictedOutput;
+
+                // Ajuste de pesos de la capa de salida
+                const outputDelta = outputError * sigmoidDerivative(predictedOutput);
+                this.weightOutput += learningRate * outputDelta * this.hiddenOutput;
+                this.biasOutput += learningRate * outputDelta;
+
+                // Error en la capa oculta
+                const hiddenError = outputDelta * this.weightOutput;
+                const hiddenDelta = hiddenError * sigmoidDerivative(this.hiddenOutput);
+
+                // Ajuste de pesos de la capa oculta
+                this.weights1[0] += learningRate * hiddenDelta * this.input1;
+                this.weights1[1] += learningRate * hiddenDelta * this.input2;
+                this.weightBias1 += learningRate * hiddenDelta;
+            }
+        }
+
+        // Datos de las compuertas lógicas
+        const logicGates = {
+            AND: {
+                inputs: [[0, 0], [0, 1], [1, 0], [1, 1]],
+                labels: [0, 0, 0, 1]
+            },
+            OR: {
+                inputs: [[0, 0], [0, 1], [1, 0], [1, 1]],
+                labels: [0, 1, 1, 1]
+            },
+            XOR: {
+                inputs: [[0, 0], [0, 1], [1, 0], [0, 0]],
+                labels: [0, 1, 1, 0]
+            }
+        };
+
+        // Función para entrenar y evaluar
+        function trainGate(gate) {
+            const data = logicGates[gate];
+            const nn = new NeuralNetwork();
+
+            // Entrenamiento
+            for (let epoch = 0; epoch < 10000; epoch++) { // Más épocas para XOR
+                for (let i = 0; i < data.inputs.length; i++) {
+                    nn.train(data.inputs[i], data.labels[i], 0.1); // Tasa de aprendizaje ajustada
+                }
+            }
+
+            // Evaluación
+            let outputHtml = `<h2>Results for ${gate} Gate</h2>`;
+            for (let i = 0; i < data.inputs.length; i++) {
+                const input = data.inputs[i];
+                const predicted = nn.forward(input);
+                outputHtml += `Input: [${input.join(", ")}] => Output: ${predicted.toFixed(4)}<br>`;
+            }
+
+            document.getElementById("output").innerHTML = outputHtml;
+        }
+    </script>
+</body>
+</html>
